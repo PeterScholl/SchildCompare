@@ -137,9 +137,9 @@ class ReportApp(tk.Tk):
         self.update_status(self.lupo_label, lupo_import_ok, "LuPO", lupo_import_result)
         
         # Report als Textdatei speichern und im Fenster anzeigen
-        report = f"Schild-Import: {'OK' if schild_import_ok else f'Missing files: {schild_import_result}'}\n"
-        report += f"Untis-Import: {'OK' if untis_import_ok else 'Fehler'}\n"
-        report += f"LuPO-Import: {'OK' if lupo_import_ok else 'Fehler'}\n"
+        report = f"Schild-Import: {f'{schild_import_result}' if schild_import_ok else f'Missing files: {schild_import_result}'}\n"
+        report += f"Untis-Import: {f'{untis_import_result}' if untis_import_ok else 'Fehler'}\n"
+        report += f"LuPO-Import: {f'{lupo_import_result}' if lupo_import_ok else 'Fehler'}\n"
         
         if (schild_import_ok and untis_import_ok and lupo_import_ok):
             #hier können Jetzt die Prüfungen durchgeführt werden
