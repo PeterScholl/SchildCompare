@@ -206,6 +206,19 @@ def count_students(data):
         unique_students.add(student_key)
     return unique_students
 
+def count_students_minCount(data,mincount=1):
+    student_counts = defaultdict(int)
+    
+    # Zähle, wie oft jeder Schüler vorkommt
+    for row in data:
+        student_key = (row['Nachname'], row['Vorname'], row['Geburtsdatum'])
+        student_counts[student_key] += 1
+    
+    # Zähle nur die Schüler, die mindestens 3 Mal vorkommen
+    students_with_min_count = {student for student, count in student_counts.items() if count >= mincount}
+    
+    return students_with_min_count
+
 # Fächer zusammenführen und Stundenzahlen addieren, mit Ausgabe bei doppelten Fächern und Kursart-Überprüfung
 def merge_subjects_with_same_name(data):
     merged_data = defaultdict(lambda: {})
@@ -311,7 +324,7 @@ def create_subjectChoices_Dict(data, columns):
         data_dict[student_key].append(create_subject_key(row,columns))
     return data_dict
 
-def compare_subject_choices_report(schild_data,untis_data,lupo_data,columns):
+def compare_subject_choices_report(schild_data,untis_data,lupo_data,columns,wenigerAls2auslassen):
     report = ""
     #Fachwahlen in Dictionaries nach Schülern sortieren
     schild_dict = create_subjectChoices_Dict(schild_data,columns)
@@ -337,7 +350,7 @@ def compare_subject_choices_report(schild_data,untis_data,lupo_data,columns):
         
         
         # Vergleiche Schild- und Lupo-Daten (ohne Fachlehrer und Kurs)
-        if schild_subjects != lupo_subjects:
+        if schild_subjects != lupo_subjects and (not wenigerAls2auslassen or len(schild_subjects)>1)   :
             report+=(f"\nUnterschiedliche Fachwahlen für Schüler {student} zwischen 'schild-export' und 'lupo-export':\n")
             only_in_schild = schild_subjects - lupo_subjects
             if only_in_schild:

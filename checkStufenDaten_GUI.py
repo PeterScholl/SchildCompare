@@ -49,9 +49,12 @@ class ReportApp(tk.Tk):
         
         # Einstellungen speichern
         self.loescheAGs = tk.BooleanVar(value=True) #AGs sollen geloescht werden
-        self.verglOhneLehrer = tk.BooleanVar(value=True)  # Vergleiche ohne Lehrer
+        self.verglMitLehrer = tk.BooleanVar(value=False)  # Vergleiche ohne Lehrer
+        self.verglMitKursBez = tk.BooleanVar(value=False) #Vergleiche mit KursBez
+        self.verglMitWochenStd = tk.BooleanVar(value=False) #Vergleiche auch mit Wochenstunden
         self.glFaecherZusammen = tk.BooleanVar(value=True) # Kommt ein Fach mehrfach bei einem Schüler vor
         self.zahlenUntisEntf = tk.BooleanVar(value=True) #Zahlen aus Lehrerkürzeln bei Untis werden entfernt
+        self.wenigerAls2Faecher = tk.BooleanVar(value=True) # Schüler mit weniger als zwei Fächern nicht mit LuPO vergl.
         
     def choose_directory(self, event):
         # Öffnet den Verzeichnisauswahldialog und aktualisiert das Label
@@ -88,7 +91,10 @@ class ReportApp(tk.Tk):
         # Status Labels für die drei Importe
         self.schild_label = tk.Label(status_frame, text="Schild-Import: Nicht überprüft", relief=tk.SUNKEN, width=30)
         self.schild_label.grid(row=1, column=0, padx=5, pady=5)
-        ToolTip(self.schild_label,"TODO Anleitung Schild Export")
+        ToolTip(self.schild_label,"Export Schild: Zunächst Stufe auswäheln (AKTIVE und Externe)\n"+
+                "dann in das Menü Datenaustausch, Schild-NRW-Schnittstelle, Export\n"+
+                "Alle Haken aus, bis auf Schüler: Leistungsdaten\n"+
+                "Rechts: nur aktuellen Abschnitt auswählen -> Export starten")
         
         self.untis_label = tk.Label(status_frame, text="Untis-Import: Nicht überprüft", relief=tk.SUNKEN, width=30)
         self.untis_label.grid(row=2, column=0, padx=5, pady=5)
@@ -109,10 +115,19 @@ class ReportApp(tk.Tk):
         ckButtonAG.pack(anchor="w", padx=10, pady=5)
         ToolTip(ckButtonAG,"Bei allen Leistungsdaten werden die Fächer OAG, AG, AGGT gelöscht")
         
-        ckButtonLehrer = tk.Checkbutton(settings_window, text="Lehrer nicht prüfen", variable=self.verglOhneLehrer)
+        ckButtonLehrer = tk.Checkbutton(settings_window, text="Lehrer prüfen", variable=self.verglMitLehrer)
         ckButtonLehrer.pack(anchor="w", padx=10, pady=5)
-        ToolTip(ckButtonLehrer, "Beim Vergleich der Leistungsdaten werden verschiedene Lehrer\n z.B. in Untis oder Schild ignoriert")
-        
+        ToolTip(ckButtonLehrer, "Beim Vergleich der Leistungsdaten werden verschiedene Lehrer\n z.B. in Untis oder Schild beachtet")
+
+        ckButtonKursBez = tk.Checkbutton(settings_window, text="Kursbezeichnung prüfen", variable=self.verglMitKursBez)
+        ckButtonKursBez.pack(anchor="w", padx=10, pady=5)
+        ToolTip(ckButtonLehrer, "Beim Vergleich der Leistungsdaten wird auch die Kursbezeichnung D-GK1 oder D GK1 beachtet\n"+
+                "ACHTUNG: LuPO kennt keine Kurse")
+
+        ckButtonWochenStd = tk.Checkbutton(settings_window, text="Wochenstundenzahl prüfen", variable=self.verglMitWochenStd)
+        ckButtonWochenStd.pack(anchor="w", padx=10, pady=5)
+        ToolTip(ckButtonLehrer, "Beim Vergleich der Leistungsdaten wird auch die Wochenstundenzahl beachtet")
+
         ckButtonGlFchr = tk.Checkbutton(settings_window, text="Gleiche Fächer zusammenfassen", variable=self.glFaecherZusammen)
         ckButtonGlFchr.pack(anchor="w", padx=10, pady=5)
         ToolTip(ckButtonGlFchr, "Gibt es bei einem Schüler ein Fach mehrfach\n so werden diese zusammengefasst")
@@ -120,6 +135,10 @@ class ReportApp(tk.Tk):
         ckButtonZahlenUntis = tk.Checkbutton(settings_window, text="Zahlen aus Lehrerkürzeln bei Untis entfernen", variable=self.zahlenUntisEntf)
         ckButtonZahlenUntis.pack(anchor="w", padx=10, pady=5)
         ToolTip(ckButtonZahlenUntis, "Entfernt die Zahlen aus Lehrerkürzeln, z.B. Extern9, ...")
+
+        ckButtonWenigerAls2Faecher = tk.Checkbutton(settings_window, text="Weniger als 2 Fächer nicht mit LuPO vergl.", variable=self.wenigerAls2Faecher)
+        ckButtonWenigerAls2Faecher.pack(anchor="w", padx=10, pady=5)
+        ToolTip(ckButtonWenigerAls2Faecher, "Vergleicht Schüler mit weniger als zwei Fächern nicht mit LuPO - eventuell Externe")
 
         # Schließen Button
         tk.Button(settings_window, text="Schließen", command=settings_window.destroy).pack(pady=10)
@@ -187,13 +206,20 @@ class ReportApp(tk.Tk):
             #Schüler vergleichen
             report += "\n=== Schüler vergleichen ===\n"
             schild_students = logic.count_students(schild_data)
+            if (self.wenigerAls2Faecher.get()):
+                #Nur Schüler mit mindestens zwei Fächern
+                schild_students_forLupo = logic.count_students_minCount(schild_data,3)
+                report+=f"Für LuPO werden die Schilddaten auf {len(schild_students_forLupo)} reduziert\n"
+            else:
+                schild_students_forLupo = schild_students
+            
             untis_students = logic.count_students(untis_data)
             lupo_students = logic.count_students(lupo_data)
             report += f"Anzahlen: Schild - {len(schild_students)} SuS, Untis - {len(untis_students)} SuS, LuPO - {len(lupo_students)}\n\n"
-            if (len(schild_students-lupo_students) > 0):
-                report += f"In LuPO fehlen folgende Schüler aus Schild {schild_students-lupo_students}\n"
-            if (len(lupo_students - schild_students) > 0):
-                report += f"LuPO hat die folgenden Schüler zu viel {lupo_students-schild_students}\n"
+            if (len(schild_students_forLupo-lupo_students) > 0):
+                report += f"In LuPO fehlen folgende Schüler aus Schild {schild_students_forLupo-lupo_students}\n"
+            if (len(lupo_students - schild_students_forLupo) > 0):
+                report += f"LuPO hat die folgenden Schüler zu viel {lupo_students-schild_students_forLupo}\n"
             if (len(schild_students-untis_students) > 0):
                 report += f"In Untis fehlen folgende Schüler aus Schild {schild_students-untis_students}\n"
             if (len(untis_students - schild_students) > 0):
@@ -201,11 +227,15 @@ class ReportApp(tk.Tk):
                 
                 
             #Fachwahlen vergleichen
-            if (self.verglOhneLehrer.get()):
-                columns = ['Jahr', 'Abschnitt','Fach','Kursart']
-            else:
-                columns = ['Jahr', 'Abschnitt','Fach','Kursart','Fachlehrer','Kurs']
-            report += logic.compare_subject_choices_report(schild_data,untis_data,lupo_data,columns)
+            columns = ['Jahr', 'Abschnitt','Fach','Kursart']
+            if (self.verglMitLehrer.get()):
+                columns += ['Fachlehrer']
+            if (self.verglMitKursBez.get()):
+                columns += ['Kurs']
+            if (self.verglMitWochenStd.get()):
+                columns += ['Wochenstd.']
+            
+            report += logic.compare_subject_choices_report(schild_data,untis_data,lupo_data,columns,self.wenigerAls2Faecher.get())
                   
             
 
