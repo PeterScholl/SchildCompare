@@ -28,7 +28,7 @@ class Tee:
 
 # Verzeichnisse
 directories = {
-    'schild-export': ['Schueler_IDs.dat', 'SchuelerLeistungsdaten.dat'],
+    'schild-export': ['SchuelerLeistungsdaten.dat'],
     'untis-export': ['SchuelerLeistungsdaten.dat'],
     'lupo-export': ['SchuelerLeistungsdaten.dat']
 }
@@ -41,16 +41,16 @@ explanation = {
 }
 
 # Verzeichnisprüfung und -erstellung
-def check_and_create_dirs():
+def check_and_create_dirs(basedir):
     for directory in directories.keys():
-        if not os.path.exists(directory):
-            print(f"Verzeichnis '{directory}' existiert nicht. Erstelle es.")
-            os.makedirs(directory)
+        if not os.path.exists(os.path.join(basedir,directory)):
+            print(f"Verzeichnis '{os.path.join(basedir,directory)}' existiert nicht. Erstelle es.")
+            os.makedirs(os.path.join(basedir,directory))
         else:
-            print(f"Verzeichnis '{directory}' existiert bereits.")
+            print(f"Verzeichnis '{os.path.join(basedir,directory)}' existiert bereits.")
 
 # Datei-Überprüfung und Änderungsdatum ermitteln
-def check_files():
+def check_files_old():
     for directory, files in directories.items():
         print(f"\nPrüfe Verzeichnis: {directory}")
         missing_files = []
@@ -72,7 +72,31 @@ def check_files():
     return True
 
 # Schild-Daten überprüfen
-def check_files(cdir):
+def check_files(cdir, basedir):
+    files = directories[cdir]
+    print(f"\nPrüfe {cdir} im Verzeichnis {basedir}")
+    missing_files = []
+    
+    for file in files:
+        # Kombiniere das ausgewählte Basisverzeichnis mit dem aktuellen Verzeichnis und Dateinamen
+        file_path = os.path.join(basedir, cdir, file)
+        if os.path.exists(file_path):
+            # Änderungsdatum ermitteln
+            mod_time = os.path.getmtime(file_path)
+            print(f"Datei '{file}' gefunden. Änderungsdatum: {datetime.fromtimestamp(mod_time)}")
+        else:
+            print(f"Datei '{file}' fehlt.")
+            missing_files.append(file)
+    
+    # Benutzerabfrage bei fehlenden Dateien
+    if missing_files:
+        print(explanation.get(cdir))
+        print(f"Bitte exportiere die fehlenden Dateien: {', '.join(missing_files)} in '{os.path.join(basedir, cdir)}'. Drücke Enter, um die Prüfung zu wiederholen.")
+        return False, missing_files
+    
+    return True, datetime.fromtimestamp(mod_time)
+
+def check_files_old(cdir, basedir):
     files = directories[cdir]
     print(f"\nPrüfe {cdir}")
     missing_files = []
@@ -94,8 +118,8 @@ def check_files(cdir):
     return True, datetime.fromtimestamp(mod_time)
 
 # CSV-Datei einlesen
-def read_csv_file(directory, file_name):
-    file_path = os.path.join(directory, file_name)
+def read_csv_file(directory, file_name,basedir):
+    file_path = os.path.join(basedir,directory, file_name)
     rows = []
     if os.path.exists(file_path):
         with open(file_path, mode='r', newline='', encoding='utf-8-sig') as file:
@@ -142,7 +166,7 @@ def remove_subjects_from_data(data, subjects):
     
     return filtered_data,report
 
-def filter_data_by_year_section_class(data, jahr, abschnitt, klasse):
+def filter_data_by_year_section(data, jahr, abschnitt,klasse):
     """
     Filtert die Daten nach dem gegebenen Jahr, Abschnitt und Klasse.
     
@@ -155,7 +179,7 @@ def filter_data_by_year_section_class(data, jahr, abschnitt, klasse):
     filtered_data = []
     
     for row in data:
-        if row['Jahr'] == jahr and row['Abschnitt'] == abschnitt and (not 'Jahrgang' in row.keys() or row['Jahrgang'] == klasse):
+        if row['Jahr'] == jahr and row['Abschnitt'] == abschnitt and (not 'Jahrgang' in row.keys() or row['Jahrgang']=='' or row['Jahrgang'] == klasse):
             filtered_data.append(row)
     
     return filtered_data

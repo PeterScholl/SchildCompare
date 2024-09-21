@@ -1,6 +1,7 @@
+import os
 import tkinter as tk
 import checkStufenDaten_2 as logic
-from tkinter import ttk, messagebox
+from tkinter import ttk, messagebox, filedialog
 
 class ToolTip:
     def __init__(self, widget, text):
@@ -51,7 +52,14 @@ class ReportApp(tk.Tk):
         self.verglOhneLehrer = tk.BooleanVar(value=True)  # Vergleiche ohne Lehrer
         self.glFaecherZusammen = tk.BooleanVar(value=True) # Kommt ein Fach mehrfach bei einem Schüler vor
         self.zahlenUntisEntf = tk.BooleanVar(value=True) #Zahlen aus Lehrerkürzeln bei Untis werden entfernt
-    
+        
+    def choose_directory(self, event):
+        # Öffnet den Verzeichnisauswahldialog und aktualisiert das Label
+        directory = filedialog.askdirectory(initialdir=self.selected_dir.get())
+        if directory:
+            self.selected_dir.set(directory)
+            self.dir_label.config(text=directory)
+            
     def create_menu(self):
         # Menüleiste erstellen
         menubar = tk.Menu(self)
@@ -71,17 +79,23 @@ class ReportApp(tk.Tk):
         status_frame = tk.Frame(self)
         status_frame.pack(pady=10)
         
+        # Verzeichnisanzeige Label mit Klick-Funktion
+        self.selected_dir = tk.StringVar(value=os.getcwd())  # Startet mit dem aktuellen Verzeichnis
+        self.dir_label = tk.Label(status_frame, text=self.selected_dir.get(), relief=tk.SUNKEN, width=50, fg="blue", cursor="hand2")
+        self.dir_label.grid(row=0, column=0, columnspan=2, padx=5, pady=5)
+        self.dir_label.bind("<Button-1>", self.choose_directory)  # Klickbare Funktion
+
         # Status Labels für die drei Importe
         self.schild_label = tk.Label(status_frame, text="Schild-Import: Nicht überprüft", relief=tk.SUNKEN, width=30)
-        self.schild_label.grid(row=0, column=0, padx=5, pady=5)
+        self.schild_label.grid(row=1, column=0, padx=5, pady=5)
         ToolTip(self.schild_label,"TODO Anleitung Schild Export")
         
         self.untis_label = tk.Label(status_frame, text="Untis-Import: Nicht überprüft", relief=tk.SUNKEN, width=30)
-        self.untis_label.grid(row=1, column=0, padx=5, pady=5)
+        self.untis_label.grid(row=2, column=0, padx=5, pady=5)
         ToolTip(self.untis_label,"TODO Anleitung Untis Export")
         
         self.lupo_label = tk.Label(status_frame, text="LuPO-Import: Nicht überprüft", relief=tk.SUNKEN, width=30)
-        self.lupo_label.grid(row=2, column=0, padx=5, pady=5)
+        self.lupo_label.grid(row=3, column=0, padx=5, pady=5)
         ToolTip(self.lupo_label,"TODO Anleitung LuPO Export")
     
     def open_settings_window(self):
@@ -111,11 +125,11 @@ class ReportApp(tk.Tk):
         tk.Button(settings_window, text="Schließen", command=settings_window.destroy).pack(pady=10)
     
     def generate_report(self):
-        logic.check_and_create_dirs()
+        logic.check_and_create_dirs(self.selected_dir.get())
         # Simuliert den Import-Status-Check und erstellt den Report
-        schild_import_ok, schild_import_result = logic.check_files('schild-export')
-        untis_import_ok, untis_import_result = logic.check_files('untis-export')
-        lupo_import_ok, lupo_import_result = logic.check_files('lupo-export')
+        schild_import_ok, schild_import_result = logic.check_files('schild-export',self.selected_dir.get())
+        untis_import_ok, untis_import_result = logic.check_files('untis-export',self.selected_dir.get())
+        lupo_import_ok, lupo_import_result = logic.check_files('lupo-export',self.selected_dir.get())
         
         # Import-Status anzeigen
         self.update_status(self.schild_label, schild_import_ok, "Schild", schild_import_result)
@@ -129,9 +143,9 @@ class ReportApp(tk.Tk):
         
         if (schild_import_ok and untis_import_ok and lupo_import_ok):
             #hier können Jetzt die Prüfungen durchgeführt werden
-            schild_data = logic.read_csv_file('schild-export', 'SchuelerLeistungsdaten.dat')
-            untis_data = logic.read_csv_file('untis-export', 'SchuelerLeistungsdaten.dat')
-            lupo_data = logic.read_csv_file('lupo-export', 'SchuelerLeistungsdaten.dat')
+            schild_data = logic.read_csv_file('schild-export', 'SchuelerLeistungsdaten.dat',self.selected_dir.get())
+            untis_data = logic.read_csv_file('untis-export', 'SchuelerLeistungsdaten.dat',self.selected_dir.get())
+            lupo_data = logic.read_csv_file('lupo-export', 'SchuelerLeistungsdaten.dat',self.selected_dir.get())
             jahr,abschnitt,klasse = logic.get_year_section_class_from_lupo(lupo_data)
             report += f"Jahr: {jahr} - Abschnitt: {abschnitt} - Klasse: {klasse} - aus LuPO-Datei\n"
             len_schild_data_orig = len(schild_data)
@@ -141,8 +155,8 @@ class ReportApp(tk.Tk):
             len_lupo_data_orig = len(lupo_data)
             report += f"LuPO   enthält {len_lupo_data_orig} Datensätze\n"
             #Nur die Daten die zu Jahr, Abschnitt und Klasse passen werden benötigt
-            schild_data = logic.filter_data_by_year_section_class(schild_data,jahr,abschnitt,klasse)
-            untis_data = logic.filter_data_by_year_section_class(untis_data,jahr,abschnitt,klasse)
+            schild_data = logic.filter_data_by_year_section(schild_data,jahr,abschnitt,klasse)
+            untis_data = logic.filter_data_by_year_section(untis_data,jahr,abschnitt,klasse)
             if (len(schild_data) < len_schild_data_orig or len(untis_data) < len_untis_data_orig):
                 report += "Erhalte nur die Datensätze zu obigem Abschnitt aus LuPO\n"
                 report += f"Schild enthält jetzt {len(schild_data)} Datensätze\n"
@@ -199,7 +213,7 @@ class ReportApp(tk.Tk):
         else:
             report += "Ein Report kann erst generiert werden, wenn alle Daten vorhanden sind\n"
         
-        with open('report.txt', 'w') as f:
+        with open('report.txt', 'w',encoding='utf-8') as f:
             f.write(report)
         
         self.report_text.delete(1.0, tk.END)
