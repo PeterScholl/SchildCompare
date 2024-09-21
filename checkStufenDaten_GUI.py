@@ -111,11 +111,12 @@ class ReportApp(tk.Tk):
         
         self.untis_label = tk.Label(status_frame, text="Untis-Import: Nicht überprüft", relief=tk.SUNKEN, width=30)
         self.untis_label.grid(row=2, column=0, padx=5, pady=5)
-        ToolTip(self.untis_label,"TODO Anleitung Untis Export")
+        ToolTip(self.untis_label,"Export Untis: Menü Datei -> Import/Export -> Deutschland -> NRW-SchildNRW\n"+
+                "Reiter Exportieren auswählen - Klasse auswählen - Ordner auswählen - exportieren")
         
         self.lupo_label = tk.Label(status_frame, text="LuPO-Import: Nicht überprüft", relief=tk.SUNKEN, width=30)
         self.lupo_label.grid(row=3, column=0, padx=5, pady=5)
-        ToolTip(self.lupo_label,"TODO Anleitung LuPO Export")
+        ToolTip(self.lupo_label,"Export LuPO: Datenaustausch -> SchildNRW -> Exportieren")
     
     def open_settings_window(self):
         # Fenster für Einstellungen
