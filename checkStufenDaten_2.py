@@ -436,24 +436,25 @@ def main():
     tee = Tee('Report.txt')
     sys.stdout = tee
 
+    basedir = "Q2-Daten"
 
-    check_and_create_dirs()
+    check_and_create_dirs(basedir)
 
     for cdir in directories.keys():
-        while not check_files(cdir):
+        while not check_files(cdir,basedir):
             input("Prüfung wird wiederholt... - Bitte enter drücken")
 
     # Daten einlesen
-    schild_data = read_csv_file('schild-export', 'SchuelerLeistungsdaten.dat')
-    untis_data = read_csv_file('untis-export', 'SchuelerLeistungsdaten.dat')
-    lupo_data = read_csv_file('lupo-export', 'SchuelerLeistungsdaten.dat')
+    schild_data = read_csv_file('schild-export', 'SchuelerLeistungsdaten.dat',basedir)
+    untis_data = read_csv_file('untis-export', 'SchuelerLeistungsdaten.dat',basedir)
+    lupo_data = read_csv_file('lupo-export', 'SchuelerLeistungsdaten.dat',basedir)
     
     jahr,abschnitt,klasse = get_year_section_class_from_lupo(lupo_data)
     print(f"Jahr: {jahr} - Abschnitt: {abschnitt} - Klasse: {klasse} - aus LuPO-Datei")
     
-    #Nur die Daten die zu Jahr, Abschnitt und Klasse passen werden benötigt
-    schild_data = filter_data_by_year_section_class(schild_data,jahr,abschnitt,klasse)
-    untis_data = filter_data_by_year_section_class(untis_data,jahr,abschnitt,klasse)
+    #Nur die Daten die zu Jahr, Abschnitt passen werden benötigt
+    schild_data = filter_data_by_year_section(schild_data,jahr,abschnitt,klasse)
+    untis_data = filter_data_by_year_section(untis_data,jahr,abschnitt,klasse)
     
     print("Zahlen aus den Lehrerkürzeln bei Untis entfernen")
     untis_data = clean_teacher_codes(untis_data)
