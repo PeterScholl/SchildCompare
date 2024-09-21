@@ -3,6 +3,18 @@ import tkinter as tk
 import checkStufenDaten_2 as logic
 from tkinter import ttk, messagebox, filedialog
 
+# Define a mapping for special characters
+my_char_map = {
+    'ć': 'c',
+    'ç': 'c',
+    'Ç': 'C',
+    'é': 'e',
+    'è': 'e',
+    'ê': 'e',
+    'ñ': 'n',
+    # Add more mappings as needed
+}
+
 class ToolTip:
     def __init__(self, widget, text):
         self.widget = widget
@@ -55,6 +67,7 @@ class ReportApp(tk.Tk):
         self.glFaecherZusammen = tk.BooleanVar(value=True) # Kommt ein Fach mehrfach bei einem Schüler vor
         self.zahlenUntisEntf = tk.BooleanVar(value=True) #Zahlen aus Lehrerkürzeln bei Untis werden entfernt
         self.wenigerAls2Faecher = tk.BooleanVar(value=True) # Schüler mit weniger als zwei Fächern nicht mit LuPO vergl.
+        self.sonderzeichenErsetzen = tk.BooleanVar(value=True) #Ersetzt Sonderzeichen aus der Charmap
         
     def choose_directory(self, event):
         # Öffnet den Verzeichnisauswahldialog und aktualisiert das Label
@@ -84,7 +97,7 @@ class ReportApp(tk.Tk):
         
         # Verzeichnisanzeige Label mit Klick-Funktion
         self.selected_dir = tk.StringVar(value=os.getcwd())  # Startet mit dem aktuellen Verzeichnis
-        self.dir_label = tk.Label(status_frame, text=self.selected_dir.get(), relief=tk.SUNKEN, width=50, fg="blue", cursor="hand2")
+        self.dir_label = tk.Label(status_frame, text=self.selected_dir.get(), relief=tk.SUNKEN, width=80, fg="blue", cursor="hand2")
         self.dir_label.grid(row=0, column=0, columnspan=2, padx=5, pady=5)
         self.dir_label.bind("<Button-1>", self.choose_directory)  # Klickbare Funktion
 
@@ -108,7 +121,7 @@ class ReportApp(tk.Tk):
         # Fenster für Einstellungen
         settings_window = tk.Toplevel(self)
         settings_window.title("Einstellungen")
-        settings_window.geometry("400x200")
+        settings_window.geometry("400x320")
         
         # Checkbuttons für Einstellungen
         ckButtonAG = tk.Checkbutton(settings_window, text="AGs loeschen", variable=self.loescheAGs)
@@ -140,6 +153,10 @@ class ReportApp(tk.Tk):
         ckButtonWenigerAls2Faecher.pack(anchor="w", padx=10, pady=5)
         ToolTip(ckButtonWenigerAls2Faecher, "Vergleicht Schüler mit weniger als zwei Fächern nicht mit LuPO - eventuell Externe")
 
+        ckButtonSonderzeichen = tk.Checkbutton(settings_window, text="Sonderzeichen ersetzen", variable=self.sonderzeichenErsetzen)
+        ckButtonSonderzeichen.pack(anchor="w", padx=10, pady=5)
+        ToolTip(ckButtonSonderzeichen, "Ersetzt einige Sonderzeichen nach einer festgelegten Tabelle")
+
         # Schließen Button
         tk.Button(settings_window, text="Schließen", command=settings_window.destroy).pack(pady=10)
     
@@ -162,9 +179,14 @@ class ReportApp(tk.Tk):
         
         if (schild_import_ok and untis_import_ok and lupo_import_ok):
             #hier können Jetzt die Prüfungen durchgeführt werden
-            schild_data = logic.read_csv_file('schild-export', 'SchuelerLeistungsdaten.dat',self.selected_dir.get())
-            untis_data = logic.read_csv_file('untis-export', 'SchuelerLeistungsdaten.dat',self.selected_dir.get())
-            lupo_data = logic.read_csv_file('lupo-export', 'SchuelerLeistungsdaten.dat',self.selected_dir.get())
+            if (not self.sonderzeichenErsetzen.get()):
+                char_map = {}
+            else:
+                char_map = my_char_map
+                
+            schild_data = logic.read_csv_file('schild-export', 'SchuelerLeistungsdaten.dat',self.selected_dir.get(),char_map=char_map)
+            untis_data = logic.read_csv_file('untis-export', 'SchuelerLeistungsdaten.dat',self.selected_dir.get(),char_map=char_map)
+            lupo_data = logic.read_csv_file('lupo-export', 'SchuelerLeistungsdaten.dat',self.selected_dir.get(),char_map=char_map)
             jahr,abschnitt,klasse = logic.get_year_section_class_from_lupo(lupo_data)
             report += f"Jahr: {jahr} - Abschnitt: {abschnitt} - Klasse: {klasse} - aus LuPO-Datei\n"
             len_schild_data_orig = len(schild_data)

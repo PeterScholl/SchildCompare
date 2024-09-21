@@ -117,15 +117,20 @@ def check_files_old(cdir, basedir):
         return False, missing_files
     return True, datetime.fromtimestamp(mod_time)
 
+# Sonderzeichen behandeln
+def normalize_text(text, char_map={}):
+    return ''.join(char_map.get(char, char) for char in text)
+
 # CSV-Datei einlesen
-def read_csv_file(directory, file_name,basedir):
+def read_csv_file(directory, file_name,basedir,char_map={}):
     file_path = os.path.join(basedir,directory, file_name)
     rows = []
     if os.path.exists(file_path):
         with open(file_path, mode='r', newline='', encoding='utf-8-sig') as file:
             reader = csv.DictReader(file, delimiter='|')
             for row in reader:
-                rows.append(row)
+                normalized_row = {key: normalize_text(value, char_map=char_map) for key, value in row.items()}
+                rows.append(normalized_row)
     else:
         print(f"Datei '{file_name}' im Verzeichnis '{directory}' nicht gefunden.")
     return rows
