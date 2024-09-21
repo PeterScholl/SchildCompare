@@ -174,8 +174,8 @@ class ReportApp(tk.Tk):
         
         # Report als Textdatei speichern und im Fenster anzeigen
         report = f"Schild-Import: {f'{schild_import_result}' if schild_import_ok else f'Missing files: {schild_import_result}'}\n"
-        report += f"Untis-Import: {f'{untis_import_result}' if untis_import_ok else f'Missing files: {schild_import_result}'}\n"
-        report += f"LuPO-Import: {f'{lupo_import_result}' if lupo_import_ok else f'Missing files: {schild_import_result}'}\n"
+        report += f"Untis-Import: {f'{untis_import_result}' if untis_import_ok else f'Missing files: {untis_import_result}'}\n"
+        report += f"LuPO-Import: {f'{lupo_import_result}' if lupo_import_ok else f'Missing files: {lupo_import_result}'}\n"
         
         if (schild_import_ok and untis_import_ok and lupo_import_ok):
             #hier können Jetzt die Prüfungen durchgeführt werden
