@@ -40,6 +40,9 @@ explanation = {
     "richtige Halbjahr wählen und den richtigen Abschnitt - UTF8-Datei - keine Nachfolgehalbjahre\n"
 }
 
+# Dialogfenster für die Verzeichnisüberprüfung
+
+
 # Verzeichnisprüfung und -erstellung
 def check_and_create_dirs(basedir):
     for directory in directories.keys():
@@ -48,6 +51,15 @@ def check_and_create_dirs(basedir):
             os.makedirs(os.path.join(basedir,directory))
         else:
             print(f"Verzeichnis '{os.path.join(basedir,directory)}' existiert bereits.")
+            
+def check_dirs(basedir):
+    for directory in directories.keys():
+        if not os.path.exists(os.path.join(basedir,directory)):
+            print(f"Verzeichnis '{os.path.join(basedir,directory)}' existiert nicht.")
+            return False 
+        else:
+            return True
+
 
 # Datei-Überprüfung und Änderungsdatum ermitteln
 def check_files_old():

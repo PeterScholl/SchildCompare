@@ -75,6 +75,8 @@ class ReportApp(tk.Tk):
         if directory:
             self.selected_dir.set(directory)
             self.dir_label.config(text=directory)
+            if not logic.check_dirs(directory):
+                self.show_directory_prompt()
             
     def create_menu(self):
         # Menüleiste erstellen
@@ -102,19 +104,19 @@ class ReportApp(tk.Tk):
         self.dir_label.bind("<Button-1>", self.choose_directory)  # Klickbare Funktion
 
         # Status Labels für die drei Importe
-        self.schild_label = tk.Label(status_frame, text="Schild-Import: Nicht überprüft", relief=tk.SUNKEN, width=30)
+        self.schild_label = tk.Label(status_frame, text="Schild-Import: Nicht überprüft", relief=tk.SUNKEN, width=50)
         self.schild_label.grid(row=1, column=0, padx=5, pady=5)
         ToolTip(self.schild_label,"Export Schild: Zunächst Stufe auswäheln (AKTIVE und Externe)\n"+
                 "dann in das Menü Datenaustausch, Schild-NRW-Schnittstelle, Export\n"+
                 "Alle Haken aus, bis auf Schüler: Leistungsdaten\n"+
                 "Rechts: nur aktuellen Abschnitt auswählen -> Export starten")
         
-        self.untis_label = tk.Label(status_frame, text="Untis-Import: Nicht überprüft", relief=tk.SUNKEN, width=30)
+        self.untis_label = tk.Label(status_frame, text="Untis-Import: Nicht überprüft", relief=tk.SUNKEN, width=50)
         self.untis_label.grid(row=2, column=0, padx=5, pady=5)
         ToolTip(self.untis_label,"Export Untis: Menü Datei -> Import/Export -> Deutschland -> NRW-SchildNRW\n"+
                 "Reiter Exportieren auswählen - Klasse auswählen - Ordner auswählen - exportieren")
         
-        self.lupo_label = tk.Label(status_frame, text="LuPO-Import: Nicht überprüft", relief=tk.SUNKEN, width=30)
+        self.lupo_label = tk.Label(status_frame, text="LuPO-Import: Nicht überprüft", relief=tk.SUNKEN, width=50)
         self.lupo_label.grid(row=3, column=0, padx=5, pady=5)
         ToolTip(self.lupo_label,"Export LuPO: Datenaustausch -> SchildNRW -> Exportieren")
     
@@ -162,7 +164,9 @@ class ReportApp(tk.Tk):
         tk.Button(settings_window, text="Schließen", command=settings_window.destroy).pack(pady=10)
     
     def generate_report(self):
-        logic.check_and_create_dirs(self.selected_dir.get())
+        if not logic.check_dirs(self.selected_dir.get()):
+                self.show_directory_prompt()
+               
         # Simuliert den Import-Status-Check und erstellt den Report
         schild_import_ok, schild_import_result = logic.check_files('schild-export',self.selected_dir.get())
         untis_import_ok, untis_import_result = logic.check_files('untis-export',self.selected_dir.get())
@@ -278,6 +282,37 @@ class ReportApp(tk.Tk):
             label.config(text=f"{name}: OK - {import_result}", bg="lightgreen")
         else:
             label.config(text=f"{name}-Import: Missing Files {import_result}", bg="lightcoral")
+
+
+    def show_directory_prompt(self):
+        dialog_window = tk.Toplevel()  # Neues Fenster, damit es nicht das Hauptfenster beeinflusst
+        dialog_window.title("Verzeichnisse anlegen")
+
+        label = tk.Label(dialog_window, text="Die Verzeichnisse für die Exportdateien existieren nicht. Sollen diese nun angelegt werden?")
+        label.pack(padx=20, pady=20)
+
+        def on_ok():
+            messagebox.showinfo("Verzeichnisse", "Verzeichnisse werden angelegt.")
+            logic.check_and_create_dirs(self.selected_dir.get())
+            dialog_window.destroy()  # Fenster schließen, wenn "OK" geklickt wird
+
+        def on_cancel():
+            messagebox.showinfo("Verzeichnisse", "Aktion abgebrochen.")
+            dialog_window.destroy()  # Fenster schließen, wenn "Abbrechen" geklickt wird
+
+        ok_button = tk.Button(dialog_window, text="OK", command=on_ok)
+        cancel_button = tk.Button(dialog_window, text="Abbrechen", command=on_cancel)
+
+        ok_button.pack(side="left", padx=10, pady=10)
+        cancel_button.pack(side="right", padx=10, pady=10)
+
+        dialog_window.transient()  # Damit es über dem Hauptfenster bleibt
+        dialog_window.grab_set()   # Modal machen, damit nur dieses Fenster bedienbar ist
+        dialog_window.wait_window()  # Warten, bis das Fenster geschlossen wird
+
+    # Aufruf der Methode, z.B. nach einer bestimmten Aktion
+    # show_directory_prompt()
+
 
 # Anwendung starten
 if __name__ == "__main__":
