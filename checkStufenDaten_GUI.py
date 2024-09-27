@@ -152,9 +152,9 @@ class ReportApp(tk.Tk):
         ckButtonZahlenUntis.pack(anchor="w", padx=10, pady=5)
         ToolTip(ckButtonZahlenUntis, "Entfernt die Zahlen aus Lehrerkürzeln, z.B. Extern9, ...")
 
-        ckButtonWenigerAls2Faecher = tk.Checkbutton(settings_window, text="Weniger als 2 Fächer nicht mit LuPO vergl.", variable=self.wenigerAls2Faecher)
+        ckButtonWenigerAls2Faecher = tk.Checkbutton(settings_window, text="Weniger als 3 Fächer nicht mit LuPO vergl.", variable=self.wenigerAls2Faecher)
         ckButtonWenigerAls2Faecher.pack(anchor="w", padx=10, pady=5)
-        ToolTip(ckButtonWenigerAls2Faecher, "Vergleicht Schüler mit weniger als zwei Fächern nicht mit LuPO - eventuell Externe")
+        ToolTip(ckButtonWenigerAls2Faecher, "Vergleicht Schüler mit weniger als drei Fächern nicht mit LuPO\nExterne Schüler werden dadurch ignoriert")
 
         ckButtonSonderzeichen = tk.Checkbutton(settings_window, text="Sonderzeichen ersetzen", variable=self.sonderzeichenErsetzen)
         ckButtonSonderzeichen.pack(anchor="w", padx=10, pady=5)
