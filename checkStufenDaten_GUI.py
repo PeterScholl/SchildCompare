@@ -324,7 +324,7 @@ class ReportApp(tk.Tk):
         else:
             report += "Ein Report kann erst generiert werden, wenn alle Daten vorhanden sind\n"
         
-        with open('report.txt', 'w',encoding='utf-8') as f:
+        with open(os.path.join(self.selected_dir.get(),'report.txt'), 'w',encoding='utf-8') as f:
             f.write(report)
         
         self.report_text.delete(1.0, tk.END)
