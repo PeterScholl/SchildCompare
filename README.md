@@ -1,4 +1,4 @@
-#Anleitung
+# Anleitung
 
 Wähle zuerst ein Verzeichnis, in dem die Dateien der verschiedenen Datenbanken abgelegt werden sollen. Danach werden export-Verzeichnisse für jedes System angelegt
 
