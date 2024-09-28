@@ -1,7 +1,9 @@
 import os
 import tkinter as tk
 import checkStufenDaten_2 as logic
+import webbrowser
 from tkinter import ttk, messagebox, filedialog
+
 
 # Define a mapping for special characters
 my_char_map = {
@@ -68,6 +70,21 @@ class ReportApp(tk.Tk):
         self.zahlenUntisEntf = tk.BooleanVar(value=True) #Zahlen aus Lehrerkürzeln bei Untis werden entfernt
         self.wenigerAls2Faecher = tk.BooleanVar(value=True) # Schüler mit weniger als zwei Fächern nicht mit LuPO vergl.
         self.sonderzeichenErsetzen = tk.BooleanVar(value=True) #Ersetzt Sonderzeichen aus der Charmap
+
+    def adjust_size(self, new_window):
+        # Let Tkinter calculate the required size
+        new_window.update_idletasks()
+        new_window.geometry("")  # Reset geometry to fit the content
+
+        # Get actual window position
+        window_x = new_window.winfo_x()
+        window_y = new_window.winfo_y()
+
+        # Resize window to fit content, but keep its position
+        #new_size = f"{new_window.winfo_width()}x{new_window.winfo_height()}+{window_x}+{window_y}"
+        new_size = f"+{window_x}+{window_y}"
+        #print(f"new size: {new_size}")
+        new_window.geometry(new_size)
         
     def choose_directory(self, event):
         # Öffnet den Verzeichnisauswahldialog und aktualisiert das Label
@@ -85,6 +102,7 @@ class ReportApp(tk.Tk):
         # Menü "Datei"
         file_menu = tk.Menu(menubar, tearoff=0)
         file_menu.add_command(label="Einstellungen", command=self.open_settings_window)
+        file_menu.add_command(label="Info/Hilfe", command=self.open_help_window)
         file_menu.add_separator()
         file_menu.add_command(label="Beenden", command=self.quit)
         menubar.add_cascade(label="Datei", menu=file_menu)
@@ -120,11 +138,43 @@ class ReportApp(tk.Tk):
         self.lupo_label.grid(row=3, column=0, padx=5, pady=5)
         ToolTip(self.lupo_label,"Export LuPO: Datenaustausch -> SchildNRW -> Exportieren")
     
+    def open_help_window(self):
+        # Fenster für die Hilfe
+        help_window = tk.Toplevel(self)
+        help_window.title("Hilfe")
+        #help_window.geometry("300x150")
+        
+        # Info-Label
+        info_label = tk.Label(help_window, text="Anleitung\n\n"+
+            "Wähle zuerst ein Verzeichnis, in dem die Dateien der verschiedenen\n"+
+            "Datenbanken abgelegt werden sollen. Danach werden export-Verzeichnisse\n"+
+            "für jedes System angelegt.\n"+
+            "Nun können in diese Export-Ordner von jeder Datenquelle die Leistungsdaten\n"+
+            "exportiert werden. Dabei soll das UTF-8-Format gewählt werden.\n"+
+            "Hilfe erhält man, wenn man mit der Maus über das Status-Feld der\n"+
+            "entsprechenden Datenbank fährt.\n"+
+            "Wenn alle Export-Dateien generiert worden sind, können noch Einstellungen\n"+
+            "im Datei-Menü angepasst werden. Dann kann auf Report geklickt werden.")
+        info_label.pack(pady=10)
+        
+        # Link-Label
+        link = tk.Label(help_window, text="Github-Projekt-Website", fg="blue", cursor="hand2")
+        link.pack()
+
+        # Funktion zum Öffnen des Links
+        link.bind("<Button-1>", lambda e: webbrowser.open_new("https://github.com/PeterScholl/SchildCompare"))
+
+        # Schließen-Button
+        close_button = tk.Button(help_window, text="Schließen", command=help_window.destroy)
+        close_button.pack(pady=10)
+        help_window.after(80, lambda: self.adjust_size(help_window))
+    
     def open_settings_window(self):
         # Fenster für Einstellungen
         settings_window = tk.Toplevel(self)
         settings_window.title("Einstellungen")
-        settings_window.geometry("400x320")
+        #Geometry soll später dem Inhalt angepasst werden
+        #settings_window.geometry("200x320")
         
         # Checkbuttons für Einstellungen
         ckButtonAG = tk.Checkbutton(settings_window, text="AGs loeschen", variable=self.loescheAGs)
@@ -162,7 +212,11 @@ class ReportApp(tk.Tk):
 
         # Schließen Button
         tk.Button(settings_window, text="Schließen", command=settings_window.destroy).pack(pady=10)
-    
+        
+        # Let Tkinter calculate the required size
+        settings_window.after(80, lambda: self.adjust_size(settings_window))
+        
+        
     def generate_report(self):
         if not logic.check_dirs(self.selected_dir.get()):
                 self.show_directory_prompt()
