@@ -269,14 +269,15 @@ class ReportApp(tk.Tk):
                 report += tempreport
                 if (len(schild_data)<len_alt):
                     report += f"\n Es wurden {len_alt-len(schild_data)} Eintraege in Schild entfernt\n"
-                    
-                
             
             # Zahlen aus den Lehrerkürzen entfernen falls gewünscht
             if (self.zahlenUntisEntf.get()):
                 report += "\nZahlen aus den Lehrerkürzeln bei Untis werden entfernt\n"
                 untis_data = logic.clean_teacher_codes(untis_data)
-                
+
+            # Leere LupoFelder (Fachlehrer, Kurs) auf Joker '*' setzen
+            lupo_data = logic.set_empty_course_teacher_to_joker(lupo_data)
+
             if (self.glFaecherZusammen.get()):
                 # 0. Untis Fächer zusammenführen - entsprechende Meldungen erzeugen
                 report += "\n=== Prüfe doppelte Fächer in Untis-Export ==="

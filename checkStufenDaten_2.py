@@ -214,6 +214,22 @@ def clean_teacher_codes(data):
     
     return data
 
+def set_empty_course_teacher_to_joker(data):
+    """
+    Ersetzt leere Strings für Kurs und Teacher auf '*'
+    
+    :param data: Liste der eingelesenen CSV-Daten (z.B. Lupo-Daten)
+    :return: Bereinigte Liste der Daten
+    """
+    for row in data:
+        # Lehrerkürzel bereinigen, indem alle Ziffern entfernt werden
+        if row['Fachlehrer'] == '':
+            row['Fachlehrer'] = '*'
+        if row['Kurs'] == '':
+            row['Kurs'] = '*'
+    
+    return data
+
 # Schüler zählen (eindeutige Schüler anhand von Nachname, Vorname, Geburtsdatum)
 def count_students(data):
     unique_students = set()
@@ -341,6 +357,30 @@ def create_subjectChoices_Dict(data, columns):
         data_dict[student_key].append(create_subject_key(row,columns))
     return data_dict
 
+def compare_and_diff_subjects(schild_subjects, untis_subjects):
+    """Vergleicht zwei Sets von Tupeln und behandelt * als Joker.
+       Gibt zwei Sets zurück: eines mit den Elementen, die nur in schild_subjects vorkommen,
+       und eines mit den Elementen, die nur in untis_subjects vorkommen."""
+
+    def tuples_equal(schild_tuple, untis_tuple):
+        # Vergleicht jedes Element des Tupels unter Berücksichtigung von Jokern (leeren Strings)
+        return all(s == u or s == '*' or u == '*' for s, u in zip(schild_tuple, untis_tuple))
+
+    # Sets für übrig gebliebene (ungematchte) Elemente
+    schild_only = set(schild_subjects)
+    untis_only = set(untis_subjects)
+
+    # Durchlaufe beide Sets und entferne gleiche Elemente
+    for schild_subject in list(schild_only):
+        for untis_subject in list(untis_only):
+            if tuples_equal(schild_subject, untis_subject):
+                schild_only.discard(schild_subject)
+                untis_only.discard(untis_subject)
+                break
+
+    return schild_only, untis_only
+
+
 def compare_subject_choices_report(schild_data,untis_data,lupo_data,columns,wenigerAls2auslassen):
     report = ""
     #Fachwahlen in Dictionaries nach Schülern sortieren
@@ -356,23 +396,21 @@ def compare_subject_choices_report(schild_data,untis_data,lupo_data,columns,weni
         lupo_subjects = set(lupo_dict.get(student, []))
         
         # Vergleiche Schild- und Untis-Daten
-        if schild_subjects != untis_subjects:
+        only_in_schild, only_in_untis = compare_and_diff_subjects(schild_subjects,untis_subjects)
+        if only_in_schild or only_in_untis:
             report+=(f"\nUnterschiedliche Fachwahlen für Schüler {student} zwischen 'schild-export' und 'untis-export':\n")
-            only_in_schild = schild_subjects - untis_subjects
             if only_in_schild:
                 report+=(f"Nur in 'schild-export': {only_in_schild}\n")
-            only_in_untis = untis_subjects - schild_subjects
             if only_in_untis:
                 report+=(f"Nur in 'untis-export': {only_in_untis}\n")        
         
         
         # Vergleiche Schild- und Lupo-Daten (ohne Fachlehrer und Kurs)
-        if schild_subjects != lupo_subjects and (not wenigerAls2auslassen or len(schild_subjects)>1)   :
+        only_in_schild, only_in_lupo = compare_and_diff_subjects(schild_subjects,lupo_subjects)
+        if (only_in_schild or only_in_lupo) and (not wenigerAls2auslassen or len(schild_subjects)>1)   :
             report+=(f"\nUnterschiedliche Fachwahlen für Schüler {student} zwischen 'schild-export' und 'lupo-export':\n")
-            only_in_schild = schild_subjects - lupo_subjects
             if only_in_schild:
                 report+=(f"Nur in 'schild-export': {only_in_schild}\n")
-            only_in_lupo = lupo_subjects - schild_subjects
             if only_in_lupo:
                 report+=(f"Nur in 'lupo-export': {only_in_lupo}\n")
     return report
