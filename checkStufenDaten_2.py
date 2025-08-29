@@ -201,6 +201,26 @@ def filter_data_by_year_section(data, jahr, abschnitt,klasse):
     
     return filtered_data
 
+def replace_kursart(data, alt, neu):
+    """
+    Ersetzt in der Spalte 'Kursart' genau die Bezeichnung alt durch neu.
+
+    :param data: Liste von Dictionaries (z. B. eingelesene CSV-Daten), 
+                 jedes Dictionary repräsentiert eine Zeile.
+    :param alt: String, die alte Bezeichnung, die ersetzt werden soll (exakte Übereinstimmung).
+    :param neu: String, die neue Bezeichnung, die eingetragen werden soll.
+    :return: Geänderte Liste der Daten. 
+             Nur Felder mit genau passender 'Kursart' werden ersetzt.
+             Falls 'Kursart' nicht existiert oder None ist, passiert nichts.
+    """
+    count = 0
+    for row in data:
+        if 'Kursart' in row and row['Kursart'] == alt:
+            row['Kursart'] = neu
+            count+=1
+    return data, count
+
+
 def clean_teacher_codes(data):
     """
     Entfernt Zahlen aus den Lehrerkürzeln (z.B. 'Extern1' -> 'Extern').

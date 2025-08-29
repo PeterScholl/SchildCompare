@@ -4,6 +4,7 @@ import checkStufenDaten_2 as logic
 import webbrowser
 from tkinter import ttk, messagebox, filedialog
 
+# Exe-Datei erzeugen: Im Terminal pyinstaller --onefile checkStufenDaten_GUI.py
 
 # Define a mapping for special characters
 my_char_map = {
@@ -46,6 +47,9 @@ class ReportApp(tk.Tk):
         self.title("Schild-LuPO-Untis-Abgleich")
         self.geometry("800x600")
         
+        # WICHTIG: Topmost deaktivieren
+        self.attributes("-topmost", False)
+        
         # Menüleiste
         self.create_menu()
         
@@ -63,6 +67,7 @@ class ReportApp(tk.Tk):
         
         # Einstellungen speichern
         self.loescheAGs = tk.BooleanVar(value=True) #AGs sollen geloescht werden
+        self.abifaecherAlsGKS = tk.BooleanVar(value=False) #AB3 und AB4 werden durch GKS ersetzt
         self.verglMitLehrer = tk.BooleanVar(value=False)  # Vergleiche ohne Lehrer
         self.verglMitKursBez = tk.BooleanVar(value=False) #Vergleiche mit KursBez
         self.verglMitWochenStd = tk.BooleanVar(value=False) #Vergleiche auch mit Wochenstunden
@@ -180,7 +185,11 @@ class ReportApp(tk.Tk):
         ckButtonAG = tk.Checkbutton(settings_window, text="AGs loeschen", variable=self.loescheAGs)
         ckButtonAG.pack(anchor="w", padx=10, pady=5)
         ToolTip(ckButtonAG,"Bei allen Leistungsdaten werden die Fächer OAG, AG, AGGT gelöscht")
-        
+
+        ckButtonAB34 = tk.Checkbutton(settings_window, text="AB3/4 in GKS ändern", variable=self.abifaecherAlsGKS)
+        ckButtonAB34.pack(anchor="w", padx=10, pady=5)
+        ToolTip(ckButtonAB34,"Bei allen Leistungsdaten werden die Kursarten AB3 und AB4 in GKS abgeändert")
+
         ckButtonLehrer = tk.Checkbutton(settings_window, text="Lehrer prüfen", variable=self.verglMitLehrer)
         ckButtonLehrer.pack(anchor="w", padx=10, pady=5)
         ToolTip(ckButtonLehrer, "Beim Vergleich der Leistungsdaten werden verschiedene Lehrer\n z.B. in Untis oder Schild beachtet")
@@ -269,7 +278,19 @@ class ReportApp(tk.Tk):
                 report += tempreport
                 if (len(schild_data)<len_alt):
                     report += f"\n Es wurden {len_alt-len(schild_data)} Eintraege in Schild entfernt\n"
-            
+
+            # Kursarten AB3 und AB4 durch GKS ersetzen
+            if (self.abifaecherAlsGKS.get()):
+                report += f"\nAB3 und AB4 werden in schild, untis, lupo ersetzt: "
+                for data in (schild_data, untis_data, lupo_data):
+                    for bez in ("AB3","AB4"):
+                        data, count = logic.replace_kursart(data, bez, "GKS")
+                    if (not count): count = 0
+                    report += f"{count} mal "
+                report += "\n"
+
+
+
             # Zahlen aus den Lehrerkürzen entfernen falls gewünscht
             if (self.zahlenUntisEntf.get()):
                 report += "\nZahlen aus den Lehrerkürzeln bei Untis werden entfernt\n"
