@@ -403,6 +403,7 @@ def compare_and_diff_subjects(schild_subjects, untis_subjects):
 
 def compare_subject_choices_report(schild_data,untis_data,lupo_data,columns,wenigerAls2auslassen):
     report = ""
+    ohneLupo = (len(lupo_data)==0)
     #Fachwahlen in Dictionaries nach Schülern sortieren
     schild_dict = create_subjectChoices_Dict(schild_data,columns)
     untis_dict = create_subjectChoices_Dict(untis_data,columns)
@@ -424,15 +425,15 @@ def compare_subject_choices_report(schild_data,untis_data,lupo_data,columns,weni
             if only_in_untis:
                 report+=(f"Nur in 'untis-export': {only_in_untis}\n")        
         
-        
-        # Vergleiche Schild- und Lupo-Daten (ohne Fachlehrer und Kurs)
-        only_in_schild, only_in_lupo = compare_and_diff_subjects(schild_subjects,lupo_subjects)
-        if (only_in_schild or only_in_lupo) and (not wenigerAls2auslassen or len(schild_subjects)>1)   :
-            report+=(f"\nUnterschiedliche Fachwahlen für Schüler {student} zwischen 'schild-export' und 'lupo-export':\n")
-            if only_in_schild:
-                report+=(f"Nur in 'schild-export': {only_in_schild}\n")
-            if only_in_lupo:
-                report+=(f"Nur in 'lupo-export': {only_in_lupo}\n")
+        if (not ohneLupo):
+            # Vergleiche Schild- und Lupo-Daten (ohne Fachlehrer und Kurs)
+            only_in_schild, only_in_lupo = compare_and_diff_subjects(schild_subjects,lupo_subjects)
+            if (only_in_schild or only_in_lupo) and (not wenigerAls2auslassen or len(schild_subjects)>1)   :
+                report+=(f"\nUnterschiedliche Fachwahlen für Schüler {student} zwischen 'schild-export' und 'lupo-export':\n")
+                if only_in_schild:
+                    report+=(f"Nur in 'schild-export': {only_in_schild}\n")
+                if only_in_lupo:
+                    report+=(f"Nur in 'lupo-export': {only_in_lupo}\n")
     return report
     
     

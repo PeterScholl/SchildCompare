@@ -50,11 +50,24 @@ class ReportApp(tk.Tk):
         # WICHTIG: Topmost deaktivieren
         self.attributes("-topmost", False)
         
+        # Einstellungen in Variablen speichern
+        self.ohneLupo = tk.BooleanVar(value=True) #Lupo-Vergleich deaktivieren
+        self.loescheAGs = tk.BooleanVar(value=True) #AGs sollen geloescht werden
+        self.abifaecherAlsGKS = tk.BooleanVar(value=False) #AB3 und AB4 werden durch GKS ersetzt
+        self.verglMitLehrer = tk.BooleanVar(value=False)  # Vergleiche ohne Lehrer
+        self.verglMitKursBez = tk.BooleanVar(value=False) #Vergleiche mit KursBez
+        self.verglMitWochenStd = tk.BooleanVar(value=False) #Vergleiche auch mit Wochenstunden
+        self.glFaecherZusammen = tk.BooleanVar(value=True) # Kommt ein Fach mehrfach bei einem Schüler vor
+        self.zahlenUntisEntf = tk.BooleanVar(value=True) #Zahlen aus Lehrerkürzeln bei Untis werden entfernt
+        self.wenigerAls2Faecher = tk.BooleanVar(value=True) # Schüler mit weniger als zwei Fächern nicht mit LuPO vergl.
+        self.sonderzeichenErsetzen = tk.BooleanVar(value=True) #Ersetzt Sonderzeichen aus der Charmap
+
         # Menüleiste
         self.create_menu()
         
         # Inhalt: Infoboxen für Importe
         self.create_import_status_boxes()
+        self.toggle_lupo_label() #LuPO Label ggf. ausblenden
         
         # Textbox für den Report
         self.report_text = tk.Text(self, height=10, width=50)
@@ -65,16 +78,11 @@ class ReportApp(tk.Tk):
         start_button = tk.Button(self, text="Report generieren", command=self.generate_report)
         start_button.pack(pady=10)
         
-        # Einstellungen speichern
-        self.loescheAGs = tk.BooleanVar(value=True) #AGs sollen geloescht werden
-        self.abifaecherAlsGKS = tk.BooleanVar(value=False) #AB3 und AB4 werden durch GKS ersetzt
-        self.verglMitLehrer = tk.BooleanVar(value=False)  # Vergleiche ohne Lehrer
-        self.verglMitKursBez = tk.BooleanVar(value=False) #Vergleiche mit KursBez
-        self.verglMitWochenStd = tk.BooleanVar(value=False) #Vergleiche auch mit Wochenstunden
-        self.glFaecherZusammen = tk.BooleanVar(value=True) # Kommt ein Fach mehrfach bei einem Schüler vor
-        self.zahlenUntisEntf = tk.BooleanVar(value=True) #Zahlen aus Lehrerkürzeln bei Untis werden entfernt
-        self.wenigerAls2Faecher = tk.BooleanVar(value=True) # Schüler mit weniger als zwei Fächern nicht mit LuPO vergl.
-        self.sonderzeichenErsetzen = tk.BooleanVar(value=True) #Ersetzt Sonderzeichen aus der Charmap
+    def toggle_lupo_label(self):
+        if self.ohneLupo.get():
+            self.lupo_label.grid_remove()
+        else:
+            self.lupo_label.grid()
 
     def adjust_size(self, new_window):
         # Let Tkinter calculate the required size
@@ -138,11 +146,11 @@ class ReportApp(tk.Tk):
         self.untis_label.grid(row=2, column=0, padx=5, pady=5)
         ToolTip(self.untis_label,"Export Untis: Menü Datei -> Import/Export -> Deutschland -> NRW-SchildNRW\n"+
                 "Reiter Exportieren auswählen - Klasse auswählen - Ordner auswählen - exportieren")
-        
+
         self.lupo_label = tk.Label(status_frame, text="LuPO-Import: Nicht überprüft", relief=tk.SUNKEN, width=50)
         self.lupo_label.grid(row=3, column=0, padx=5, pady=5)
         ToolTip(self.lupo_label,"Export LuPO: Datenaustausch -> SchildNRW -> Exportieren")
-    
+
     def open_help_window(self):
         # Fenster für die Hilfe
         help_window = tk.Toplevel(self)
@@ -182,6 +190,10 @@ class ReportApp(tk.Tk):
         #settings_window.geometry("200x320")
         
         # Checkbuttons für Einstellungen
+        ckButtonOhneLupo = tk.Checkbutton(settings_window, text="Ohne LuPO", variable=self.ohneLupo)
+        ckButtonOhneLupo.pack(anchor="w", padx=10, pady=5)
+        ToolTip(ckButtonOhneLupo,"Vergleich der Leistungsdaten ohne LuPO")
+
         ckButtonAG = tk.Checkbutton(settings_window, text="AGs loeschen", variable=self.loescheAGs)
         ckButtonAG.pack(anchor="w", padx=10, pady=5)
         ToolTip(ckButtonAG,"Bei allen Leistungsdaten werden die Fächer OAG, AG, AGGT gelöscht")
@@ -220,7 +232,9 @@ class ReportApp(tk.Tk):
         ToolTip(ckButtonSonderzeichen, "Ersetzt einige Sonderzeichen nach einer festgelegten Tabelle")
 
         # Schließen Button
-        tk.Button(settings_window, text="Schließen", command=settings_window.destroy).pack(pady=10)
+        tk.Button(settings_window, text="Schließen",
+                  command=lambda: (self.toggle_lupo_label(), settings_window.destroy())
+                  ).pack(pady=10)
         
         # Let Tkinter calculate the required size
         settings_window.after(80, lambda: self.adjust_size(settings_window))
@@ -233,17 +247,23 @@ class ReportApp(tk.Tk):
         # Simuliert den Import-Status-Check und erstellt den Report
         schild_import_ok, schild_import_result = logic.check_files('schild-export',self.selected_dir.get())
         untis_import_ok, untis_import_result = logic.check_files('untis-export',self.selected_dir.get())
-        lupo_import_ok, lupo_import_result = logic.check_files('lupo-export',self.selected_dir.get())
+        if (not self.ohneLupo.get()):
+            lupo_import_ok, lupo_import_result = logic.check_files('lupo-export',self.selected_dir.get())
         
         # Import-Status anzeigen
         self.update_status(self.schild_label, schild_import_ok, "Schild", schild_import_result)
         self.update_status(self.untis_label, untis_import_ok, "Untis", untis_import_result)    
-        self.update_status(self.lupo_label, lupo_import_ok, "LuPO", lupo_import_result)
+        if (not self.ohneLupo.get()):
+            self.update_status(self.lupo_label, lupo_import_ok, "LuPO", lupo_import_result)
+        else:
+            lupo_import_ok = True
+            lupo_data = [] #TODO ist das korrekt für Leere Daten?
         
         # Report als Textdatei speichern und im Fenster anzeigen
         report = f"Schild-Import: {f'{schild_import_result}' if schild_import_ok else f'Missing files: {schild_import_result}'}\n"
         report += f"Untis-Import: {f'{untis_import_result}' if untis_import_ok else f'Missing files: {untis_import_result}'}\n"
-        report += f"LuPO-Import: {f'{lupo_import_result}' if lupo_import_ok else f'Missing files: {lupo_import_result}'}\n"
+        if (not self.ohneLupo.get()):
+            report += f"LuPO-Import: {f'{lupo_import_result}' if lupo_import_ok else f'Missing files: {lupo_import_result}'}\n"
         
         if (schild_import_ok and untis_import_ok and lupo_import_ok):
             #hier können Jetzt die Prüfungen durchgeführt werden
@@ -254,20 +274,25 @@ class ReportApp(tk.Tk):
                 
             schild_data = logic.read_csv_file('schild-export', 'SchuelerLeistungsdaten.dat',self.selected_dir.get(),char_map=char_map)
             untis_data = logic.read_csv_file('untis-export', 'SchuelerLeistungsdaten.dat',self.selected_dir.get(),char_map=char_map)
-            lupo_data = logic.read_csv_file('lupo-export', 'SchuelerLeistungsdaten.dat',self.selected_dir.get(),char_map=char_map)
-            jahr,abschnitt,klasse = logic.get_year_section_class_from_lupo(lupo_data)
-            report += f"Jahr: {jahr} - Abschnitt: {abschnitt} - Klasse: {klasse} - aus LuPO-Datei\n"
+            if (not self.ohneLupo.get()):
+                lupo_data = logic.read_csv_file('lupo-export', 'SchuelerLeistungsdaten.dat',self.selected_dir.get(),char_map=char_map)
+                jahr,abschnitt,klasse = logic.get_year_section_class_from_lupo(lupo_data)
+                report += f"Jahr: {jahr} - Abschnitt: {abschnitt} - Klasse: {klasse} - aus LuPO-Datei\n"
+            else:
+                jahr,abschnitt,klasse = logic.get_year_section_class_from_lupo(schild_data)
+                report += f"Jahr: {jahr} - Abschnitt: {abschnitt} - Klasse: {klasse} - aus Schild-Datei\n"
             len_schild_data_orig = len(schild_data)
             report += f"Schild enthält {len_schild_data_orig} Datensätze\n"
             len_untis_data_orig = len(untis_data)
             report += f"Untis  enthält {len_untis_data_orig} Datensätze\n"
-            len_lupo_data_orig = len(lupo_data)
-            report += f"LuPO   enthält {len_lupo_data_orig} Datensätze\n"
+            if (not self.ohneLupo.get()):
+                len_lupo_data_orig = len(lupo_data)
+                report += f"LuPO   enthält {len_lupo_data_orig} Datensätze\n"
             #Nur die Daten die zu Jahr, Abschnitt und Klasse passen werden benötigt
             schild_data = logic.filter_data_by_year_section(schild_data,jahr,abschnitt,klasse)
             untis_data = logic.filter_data_by_year_section(untis_data,jahr,abschnitt,klasse)
             if (len(schild_data) < len_schild_data_orig or len(untis_data) < len_untis_data_orig):
-                report += "Erhalte nur die Datensätze zu obigem Abschnitt aus LuPO\n"
+                report += "Erhalte nur die Datensätze zu obigem Abschnitt\n"
                 report += f"Schild enthält jetzt {len(schild_data)} Datensätze\n"
                 report += f"Untis  enthält jetzt {len(untis_data)} Datensätze\n"
             
@@ -281,15 +306,13 @@ class ReportApp(tk.Tk):
 
             # Kursarten AB3 und AB4 durch GKS ersetzen
             if (self.abifaecherAlsGKS.get()):
-                report += f"\nAB3 und AB4 werden in schild, untis, lupo ersetzt: "
+                report += f"\nAB3 und AB4 werden in schild, untis und ggf. lupo ersetzt: "
                 for data in (schild_data, untis_data, lupo_data):
                     for bez in ("AB3","AB4"):
                         data, count = logic.replace_kursart(data, bez, "GKS")
                     if (not count): count = 0
                     report += f"{count} mal "
                 report += "\n"
-
-
 
             # Zahlen aus den Lehrerkürzen entfernen falls gewünscht
             if (self.zahlenUntisEntf.get()):
@@ -309,25 +332,26 @@ class ReportApp(tk.Tk):
             #Schüler vergleichen
             report += "\n=== Schüler vergleichen ===\n"
             schild_students = logic.count_students(schild_data)
-            if (self.wenigerAls2Faecher.get()):
-                #Nur Schüler mit mindestens zwei Fächern
-                schild_students_forLupo = logic.count_students_minCount(schild_data,3)
-                report+=f"Für LuPO werden die Schilddaten auf {len(schild_students_forLupo)} reduziert\n"
-            else:
-                schild_students_forLupo = schild_students
-            
+            if (not self.ohneLupo.get()):
+                if (self.wenigerAls2Faecher.get()):
+                    #Nur Schüler mit mindestens zwei Fächern
+                    schild_students_forLupo = logic.count_students_minCount(schild_data,3)
+                    report+=f"Für LuPO werden die Schilddaten auf {len(schild_students_forLupo)} reduziert\n"
+                else:
+                    schild_students_forLupo = schild_students
+                
             untis_students = logic.count_students(untis_data)
             lupo_students = logic.count_students(lupo_data)
             report += f"Anzahlen: Schild - {len(schild_students)} SuS, Untis - {len(untis_students)} SuS, LuPO - {len(lupo_students)}\n\n"
-            if (len(schild_students_forLupo-lupo_students) > 0):
-                report += f"In LuPO fehlen folgende Schüler aus Schild {schild_students_forLupo-lupo_students}\n"
-            if (len(lupo_students - schild_students_forLupo) > 0):
-                report += f"LuPO hat die folgenden Schüler zu viel {lupo_students-schild_students_forLupo}\n"
+            if (not self.ohneLupo.get()):
+                if (len(schild_students_forLupo-lupo_students) > 0):
+                    report += f"In LuPO fehlen folgende Schüler aus Schild {schild_students_forLupo-lupo_students}\n"
+                if (len(lupo_students - schild_students_forLupo) > 0):
+                    report += f"LuPO hat die folgenden Schüler zu viel {lupo_students-schild_students_forLupo}\n"
             if (len(schild_students-untis_students) > 0):
                 report += f"In Untis fehlen folgende Schüler aus Schild {schild_students-untis_students}\n"
             if (len(untis_students - schild_students) > 0):
                 report += f"Untis hat die folgenden Schüler zu viel {untis_students-schild_students}\n"
-                
                 
             #Fachwahlen vergleichen
             columns = ['Jahr', 'Abschnitt','Fach','Kursart']
@@ -340,9 +364,6 @@ class ReportApp(tk.Tk):
             
             report += logic.compare_subject_choices_report(schild_data,untis_data,lupo_data,columns,self.wenigerAls2Faecher.get())
                   
-            
-
-            pass
         else:
             report += "Ein Report kann erst generiert werden, wenn alle Daten vorhanden sind\n"
         
