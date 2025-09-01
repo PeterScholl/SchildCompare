@@ -61,7 +61,8 @@ class ReportApp(tk.Tk):
         self.zahlenUntisEntf = tk.BooleanVar(value=True) #Zahlen aus Lehrerkürzeln bei Untis werden entfernt
         self.wenigerAls2Faecher = tk.BooleanVar(value=True) # Schüler mit weniger als zwei Fächern nicht mit LuPO vergl.
         self.sonderzeichenErsetzen = tk.BooleanVar(value=True) #Ersetzt Sonderzeichen aus der Charmap
-
+        self.loescheATs = tk.BooleanVar(value=True) #Lösche Leistungsdaten mit Note AT
+        
         # Menüleiste
         self.create_menu()
         
@@ -198,6 +199,10 @@ class ReportApp(tk.Tk):
         ckButtonAG.pack(anchor="w", padx=10, pady=5)
         ToolTip(ckButtonAG,"Bei allen Leistungsdaten werden die Fächer OAG, AG, AGGT gelöscht")
 
+        ckButtonAT = tk.Checkbutton(settings_window, text="Fächer mit Attest löschen", variable=self.loescheATs)
+        ckButtonAT.pack(anchor="w", padx=10, pady=5)
+        ToolTip(ckButtonAT,"Bei allen Leistungsdaten werden die Fächer mit Note AT (zum Beispiel Sport-Attest) gelöscht")
+
         ckButtonAB34 = tk.Checkbutton(settings_window, text="AB3/4 in GKS ändern", variable=self.abifaecherAlsGKS)
         ckButtonAB34.pack(anchor="w", padx=10, pady=5)
         ToolTip(ckButtonAB34,"Bei allen Leistungsdaten werden die Kursarten AB3 und AB4 in GKS abgeändert")
@@ -298,25 +303,46 @@ class ReportApp(tk.Tk):
             
             # AGs aus Schild entfernen
             if (self.loescheAGs.get()):
+                report += f"\n=== Entferne AGs [AG, AGGT, OAG] aus den Daten ===\n"
                 len_alt = len(schild_data)
                 schild_data, tempreport = logic.remove_subjects_from_data(schild_data, ['AG','AGGT','OAG'])
                 report += tempreport
                 if (len(schild_data)<len_alt):
                     report += f"\n Es wurden {len_alt-len(schild_data)} Eintraege in Schild entfernt\n"
 
+            # Fächer mit Attest aus Schild/Untis/Lupo entfernen
+            if (self.loescheATs.get()):
+                report += f"\n=== Entferne Einträge mit AT aus den Daten ===\n"
+                len_alt = len(schild_data)
+                schild_data, tempreport = logic.remove_marks_from_data(schild_data, ['AT'])
+                report += tempreport
+                if (len(schild_data)<len_alt):
+                    report += f"\n Es wurden {len_alt-len(schild_data)} Eintraege in Schild entfernt\n"
+                len_alt = len(untis_data)
+                untis_data, tempreport = logic.remove_marks_from_data(untis_data, ['AT'])
+                report += tempreport
+                if (len(untis_data)<len_alt):
+                    report += f"\n Es wurden {len_alt-len(untis_data)} Eintraege in Untis entfernt\n"
+                len_alt = len(lupo_data)
+                lupo_data, tempreport = logic.remove_marks_from_data(lupo_data, ['AT'])
+                report += tempreport
+                if (len(lupo_data)<len_alt):
+                    report += f"\n Es wurden {len_alt-len(lupo_data)} Eintraege in LuPO entfernt\n"
+
+
             # Kursarten AB3 und AB4 durch GKS ersetzen
             if (self.abifaecherAlsGKS.get()):
-                report += f"\nAB3 und AB4 werden in schild, untis und ggf. lupo ersetzt: "
+                report += f"\n=== AB3 und AB4 werden in schild, untis und ggf. lupo ersetzt: "
                 for data in (schild_data, untis_data, lupo_data):
                     for bez in ("AB3","AB4"):
                         data, count = logic.replace_kursart(data, bez, "GKS")
                     if (not count): count = 0
                     report += f"{count} mal "
-                report += "\n"
+                report += " ===\n"
 
             # Zahlen aus den Lehrerkürzen entfernen falls gewünscht
             if (self.zahlenUntisEntf.get()):
-                report += "\nZahlen aus den Lehrerkürzeln bei Untis werden entfernt\n"
+                report += "\n=== Zahlen aus den Lehrerkürzeln bei Untis werden entfernt ===\n"
                 untis_data = logic.clean_teacher_codes(untis_data)
 
             # Leere LupoFelder (Fachlehrer, Kurs) auf Joker '*' setzen

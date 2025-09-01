@@ -179,9 +179,30 @@ def remove_subjects_from_data(data, subjects):
         if row['Fach'] not in subjects :
             filtered_data.append(row)
         else:
-            report += f"Bei {row['Nachname']} {row['Vorname']} ({row['Geburtsdatum']} wurde {row['Fach']}-{row['Kurs']} entfernt\n"
+            report += f"Bei {row['Nachname']} {row['Vorname']} ({row['Geburtsdatum']}) wurde {row['Fach']}-{row['Kurs']} entfernt\n"
     
     return filtered_data,report
+
+def remove_marks_from_data(data, marks):
+    """
+    Entfernt die Einträge, die Noten haben, die in der Liste marks enthalten sind.
+    
+    :param data: Liste der eingelesenen CSV-Daten (z.B. aus Schild oder Untis)
+    :param marks: Array der Noten die entfernt werden sollen
+    :return: Gefilterte Liste der Daten, resulttext
+    """
+    filtered_data = []
+    report = ""
+    
+    for row in data:
+        #print(f"Row {row['Nachname']} {row['Vorname']} - Note: {row['Note']}")
+        if row['Note'] not in marks :
+            filtered_data.append(row)
+        else:
+            report += f"Bei {row['Nachname']} {row['Vorname']} ({row['Geburtsdatum']}) wurde {row['Fach']}-{row['Kurs']} entfernt\n"
+    
+    return filtered_data,report
+
 
 def filter_data_by_year_section(data, jahr, abschnitt,klasse):
     """
